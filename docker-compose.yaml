@@ -1,0 +1,98 @@
+version: "3.2"
+services:
+  redis:
+    image: redis:latest
+    container_name: 'redis_dt'
+    restart: always
+    command: redis-server --requirepass qKiQ79i503o3 --appendonly no --rename-command FLUSHDB "" --rename-command FLUSHALL "" --rename-command DEBUG "" --tcp-keepalive 0 --tcp-backlog 65536 --rename-command CONFIG ""
+    ports:
+      - "6379:6379"
+    volumes:
+      - 'redis-data:/data'
+
+  # mqtt_broker:
+  #   image: emqx/emqx
+  #   restart: always
+  #   container_name: 'mqtt_broker'
+  #   depends_on:
+  #     - redis
+  #   environment:
+  #     EMQX_NAME: mqtt_broker
+  #     EMQX_HOST: 127.0.0.1
+  #     EMQX_LISTENER__TCP__EXTERNAL : 1883 
+  #     EMQX_ADMIN_PASSWORD: "admin@2022"
+  #     EMQX_ALLOW_ANONYMOUS : "true"
+  #     # EMQX_ACL_NOMATCH: deny
+  #     # EMQX_ACL_DENY_ACTION: "disconnect"
+  #     # EMQX_ENABLE_ACL_CACHE: "off"
+  #     # EMQX_LOADED_PLUGINS : "emqx_auth_redis,"
+  #     # EMQX_AUTH__REDIS__SERVER : "redis_server:6379" 
+  #     # EMQX_AUTH__REDIS__PASSWORD : "qKiQ79i503o3"
+  #     # EMQX_AUTH__REDIS__PASSWORD_HASH : "salt,bcrypt"
+  #     # EMQX_AUTH__REDIS__TYPE: single
+  #     # EMQX_AUTH__REDIS__DATABASE: 0
+  #     # EMQX_AUTH__REDIS__POOL: 8
+  #     # EMQX_AUTH__REDIS__AUTH_CMD: "HMGET mqtt_user:%u password salt"
+  #     # EMQX_AUTH__REDIS__ACL_CMD: "HGETALL mqtt_acl:%u"
+  #     # EMQX_AUTH__REDIS__SUPER_CMD: "HGET mqtt_user:%u is_superuser"
+  #   ports:
+  #       - '1883:1883'
+  #       - '8081:8081'
+  #       - '8083:8083' 
+  #       - '8883:8883' 
+  #       - '8084:8084' 
+  #       - '18083:18083'
+  #   volumes:
+  #     - emqx-data:/opt/emqx/data
+  #     - emqx-etc:/opt/emqx/etc
+  #     - emqx-log:/opt/emqx/log
+
+  mqtt_broker:
+    image: vernemq_mqtt_dt
+    restart: on-failure
+    build: ./mqtt_broker_vmq
+    container_name: 'mqtt_broker_dt'
+    depends_on:
+      - redis
+    environment:
+      DOCKER_VERNEMQ_LOG__CONSOLE: 'both'
+      DOCKER_VERNEMQ_ALLOW_ANONYMOUS: 'on'
+      DOCKER_VERNEMQ_PLUGINS__VMQ_DIVERSITY: 'on'
+      # DOCKER_VERNEMQ_PLUGINS__VMQ_PASSWD: 'off'
+      # DOCKER_VERNEMQ_PLUGINS__VMQ_ACL: 'off'
+      # DOCKER_VERNEMQ_VMQ_DIVERSITY__AUTH_REDIS__ENABLED: 'on'
+      # DOCKER_VERNEMQ_VMQ_DIVERSITY__REDIS__HOST: 'redis_dt'
+      # DOCKER_VERNEMQ_VMQ_DIVERSITY__REDIS__PORT: 6379
+      # DOCKER_VERNEMQ_VMQ_DIVERSITY__REDIS__PASSWORD: 'qKiQ79i503o3'
+      # DOCKER_VERNEMQ_VMQ_DIVERSITY__REDIS__DATABASE: 0
+      # DOCKER_VERNEMQ_LISTENER__SSL__CAFILE: '/etc/ssl/vernemq_ca.crt'
+      # DOCKER_VERNEMQ_LISTENER__SSL__CERTFILE: '/etc/ssl/vernemq.crt'
+      # DOCKER_VERNEMQ_LISTENER__SSL__KEYFILE: '/etc/ssl/vernemq.key'
+      # DOCKER_VERNEMQ_LISTENER__SSL__DEFAULT: '0.0.0.0:8884'
+      # DOCKER_VERNEMQ_LISTENER__SSL__DEFAULT__USE_IDENTITY_AS_USERNAME: 'off'
+      # DOCKER_VERNEMQ_LISTENER__SSL__DEFAULT__REQUIRE_CERTIFICATE: 'off'
+
+    ports:
+        - '1883'
+        - '8888:8888'
+        - '9000:8080'
+        - '8884:8884'
+    # volumes:
+    #   - ./mqtt_broker_vmq/certs:/etc/ssl
+
+################ VMQ cluster ################### 
+  # mqtt_broker1:
+  #   image: vernemq_mqtt_dt
+  #   restart: on-failure
+  #   container_name: 'mqtt_broker_dt1'
+  #   depends_on:
+  #     - mqtt_broker
+  #   environment:
+  #     DOCKER_VERNEMQ_LOG__CONSOLE: 'both'
+  #     DOCKER_VERNEMQ_DISCOVERY_NODE: mqtt_broker_dt
+
+  
+volumes:
+  redis-data:
+
+
